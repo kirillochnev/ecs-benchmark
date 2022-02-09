@@ -27,8 +27,8 @@ namespace {
                 {"EnTT", Test::kEnTT},
                 {"EntityX", Test::kEntityX},
                 {"OpenEcs", Test::kOpenEcs},
-                {"OopWithPools", Test::kOop},
-                {"Oop", Test::kOopWithPools}
+                {"OopWithPools", Test::kOopWithPools},
+                {"Oop", Test::kOop}
         };
         const auto find_res = map.find(str);
         if (find_res != map.end()) {
