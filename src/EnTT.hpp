@@ -1,5 +1,6 @@
 #pragma once
 
+#define ENTT_ID_TYPE uint64_t
 #include "benchmark.hpp"
 #include "components.hpp"
 #include <entt/entt.hpp>
@@ -10,6 +11,7 @@ void updatePositionEnTT(const bench::Config& config) {
     using namespace bench;
     BenchMark benchmark;
 
+    static_assert(std::is_same<ENTT_ID_TYPE, uint64_t>::value);
     registry registry;
     std::vector<entity> to_destroy;
     to_destroy.reserve(config.entity_count);
