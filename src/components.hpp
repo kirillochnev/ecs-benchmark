@@ -32,16 +32,21 @@ namespace bench {
         };
     }
 
-
+    extern uint64_t entities_updated;
     inline void updatePositionFunction(Position& position, const Velocity& velocity, const Rotation& orientation) {
         constexpr Scalar dt = 1.0f / 60.0f;
         position.value += dt * velocity.value * forward(orientation.orient);
+        ++entities_updated;
     }
 
+    struct IUpdatable {
+        virtual ~IUpdatable() = default;
+        virtual void update() noexcept {}
+    };
     template<typename... _Unused>
-    struct MovableObject : private _Unused...{
+    struct MovableObject : public IUpdatable, private _Unused...{
 
-        void update() noexcept {
+        void update() noexcept override {
             updatePositionFunction(position, velocity, rotation);
         }
 
@@ -50,6 +55,26 @@ namespace bench {
         Rotation rotation;
     };
 
+    struct WithoutPosition : public IUpdatable {
+        void update() noexcept override {}
+
+        Velocity velocity;
+        Rotation rotation;
+    };
+
+    struct WithoutVelocity : public IUpdatable {
+        void update() noexcept override {}
+
+        Position position;
+        Rotation rotation;
+    };
+
+    struct WithoutRotation : public IUpdatable {
+        void update() noexcept override {}
+
+        Position position;
+        Velocity velocity;
+    };
 
     template <typename... ARGS>
     void unused(ARGS&&...) {

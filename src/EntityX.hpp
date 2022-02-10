@@ -12,18 +12,47 @@ void updatePositionEntityX(const bench::Config& config) {
 
     EventManager event_manager;
     EntityManager entity_manager{event_manager};
-    benchmark.run([&entity_manager, &config] {
+    std::vector<Entity> to_destroy;
+    to_destroy.reserve(config.entity_count);
+    benchmark.run([&entity_manager, &config, &to_destroy] {
         for (uint32_t i = 0; i < config.entity_count; ++i) {
             auto entity = entity_manager.create();
             entity.assign<Position>();
             entity.assign<Velocity>();
             entity.assign<Rotation>();
             unused (entity_manager.template assign<_Unused>(entity.id())...);
+
+            if (config.create_extra) {
+                entity = entity_manager.create();
+                entity.assign<Velocity>();
+                entity.assign<Rotation>();
+
+
+                entity = entity_manager.create();
+                entity.assign<Position>();
+                entity.assign<Rotation>();
+
+
+                entity = entity_manager.create();
+                entity.assign<Position>();
+                entity.assign<Velocity>();
+            }
+            if (config.remove_half) {
+                entity = entity_manager.create();
+                entity.assign<Position>();
+                entity.assign<Velocity>();
+                entity.assign<Rotation>();
+                unused (entity_manager.template assign<_Unused>(entity.id())...);
+                to_destroy.push_back(entity);
+            }
         }
-    }, config.create_world.iterations, [&entity_manager]{ entity_manager.reset();});
+    }, config.create_world.iterations, [&entity_manager, &to_destroy]{ entity_manager.reset(); to_destroy.clear();});
     benchmark.show(config.create_world.getOutStream(), config.create_world.report_type);
     benchmark.reset();
 
+    for (auto e : to_destroy) {
+        e.destroy();
+    }
     benchmark.run([&entity_manager]{
         ComponentHandle<Position> position;
         ComponentHandle<Velocity> velocity;

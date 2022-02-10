@@ -137,6 +137,8 @@ namespace bench {
         uint32_t entity_count = 1000000;
         TestInfo create_world{10};
         TestInfo update_world{100};
+        bool create_extra = false;
+        bool remove_half = false;
         bool parallel_update = false;
     };
 }
