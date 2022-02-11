@@ -20,15 +20,20 @@ void updatePositionMustache(const bench::Config& config) {
     std::vector<Entity> to_destroy;
     to_destroy.reserve(config.entity_count);
     benchmark.run([&world, &config, &to_destroy] {
+        auto& entities = world.entities();
+        auto& main_arch = entities.getArchetype<Position, Velocity, Rotation, _Unused...>();
+        auto& extra_arch0 = entities.getArchetype<Velocity, Rotation>();
+        auto& extra_arch1 = entities.getArchetype<Position, Rotation>();
+        auto& extra_arch2 = entities.getArchetype<Position, Velocity>();
         for (uint32_t i = 0; i < config.entity_count; ++i) {
-            (void) world.entities().create<Position, Velocity, Rotation, _Unused...>();
+            (void) entities.create(main_arch);
             if (config.create_extra) {
-                (void) world.entities().create<Velocity, Rotation>();
-                (void) world.entities().create<Position, Rotation>();
-                (void) world.entities().create<Position, Velocity>();
+                (void) entities.create(extra_arch0);
+                (void) entities.create(extra_arch1);
+                (void) entities.create(extra_arch2);
             }
             if (config.remove_half) {
-                to_destroy.push_back(world.entities().create<Position, Velocity, Rotation, _Unused...>());
+                to_destroy.push_back(entities.create(main_arch));
             }
         }
     }, config.create_world.iterations, [&world, &to_destroy]{ world.entities().clear(); to_destroy.clear();});

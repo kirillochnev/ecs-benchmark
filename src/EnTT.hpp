@@ -55,7 +55,7 @@ void updatePositionEnTT(const bench::Config& config) {
     }
 
 
-    auto group = registry.template view<Position, Velocity, Rotation>();
+    auto group = registry.template group<Position, Velocity, Rotation>();
     benchmark.run([&group]{
         group.each(&updatePositionFunction);
     }, config.update_world.iterations, []{});

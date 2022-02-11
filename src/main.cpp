@@ -70,9 +70,37 @@ void readNext(T& out, int& argc, const char**& argv) {
 }
 uint64_t bench::entities_updated = 0u;
 
+
+template<typename... ARGS>
+void runTest(std::string test_name, bench::Config& config) {
+    Test test = strToTest(test_name);
+    switch (test) {
+
+        case kUnknown:
+            throw std::runtime_error("Unknown test: [" + test_name + "]");
+        case kMustache:
+            updatePositionMustache<ARGS...>(config);
+            break;
+        case kEnTT:
+            updatePositionEnTT<ARGS...>(config);
+            break;
+        case kEntityX:
+            updatePositionEntityX<ARGS...>(config);
+            break;
+        case kOpenEcs:
+            updatePositionOpenEcs<ARGS...>(config);
+            break;
+        case kOopWithPools:
+            updatePositionOOP<true, ARGS...>(config);
+            break;
+        case kOop:
+            updatePositionOOP<false, ARGS...>(config);
+            break;
+    }
+}
+
 int main(int argc, const char** argv) {
     bench::Config config;
-    config.create_world.iterations = 1;
     config.create_world.report_type = bench::ReportType::kShort;
     config.update_world.report_type = bench::ReportType::kShort;
     --argc;
@@ -80,7 +108,6 @@ int main(int argc, const char** argv) {
     bool append = true;
     std::string test_name = "";
     readNext(test_name, argc, argv);
-    Test test = strToTest(test_name);
     readNext(config.entity_count, argc, argv);
     readNext(config.create_extra, argc, argv);
     readNext(config.remove_half, argc, argv);
@@ -95,29 +122,9 @@ int main(int argc, const char** argv) {
     config.update_world.output = &update;
 
     bench::entities_updated = 0u;
-    switch (test) {
 
-        case kUnknown:
-            throw std::runtime_error("Unknown test: [" + test_name + "]");
-        case kMustache:
-            updatePositionMustache<>(config);
-            break;
-        case kEnTT:
-            updatePositionEnTT<>(config);
-            break;
-        case kEntityX:
-            updatePositionEntityX<>(config);
-            break;
-        case kOpenEcs:
-            updatePositionOpenEcs<>(config);
-            break;
-        case kOopWithPools:
-            updatePositionOOP<true>(config);
-            break;
-        case kOop:
-            updatePositionOOP<false>(config);
-            break;
-    }
+    runTest<bench::UnusedComponent<0, sizeof(glm::mat4)> >(test_name, config);
+
     const uint64_t expected = config.entity_count * config.update_world.iterations;
     if (bench::entities_updated != expected) {
         throw std::runtime_error(test_name + ": invalid updated entities, expected: "

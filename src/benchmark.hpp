@@ -61,7 +61,11 @@ namespace bench {
             }
             const std::string unit = entities_count_ < 1 ? "ms" : "ops";
             if (metrics_.size() < 2) {
-                out << "Result: " << std::to_string(metrics_.front()) << unit << std::endl;
+                if (report_type == ReportType::kShort) {
+                    out << metrics_.front() << std::endl;
+                } else {
+                    out << "Result: " << std::to_string(metrics_.front()) << unit << std::endl;
+                }
                 return;
             }
 
