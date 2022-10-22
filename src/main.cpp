@@ -6,6 +6,8 @@
 #include "open_ecs.hpp"
 #include "EntityX.hpp"
 #include "OOP.hpp"
+#include "flecs.hpp"
+#include "mustache/utils/timer.hpp"
 
 #include <map>
 #include <fstream>
@@ -16,6 +18,7 @@ namespace {
         kUnknown,
         kMustache,
         kEnTT,
+        kFlecs,
         kEntityX,
         kOpenEcs,
         kOopWithPools,
@@ -25,7 +28,9 @@ namespace {
     Test strToTest(const std::string& str) noexcept {
         static const std::map<std::string, Test> map {
                 {"mustache", Test::kMustache},
+                {"default", Test::kMustache},
                 {"EnTT", Test::kEnTT},
+                {"flecs", Test::kFlecs},
                 {"EntityX", Test::kEntityX},
                 {"OpenEcs", Test::kOpenEcs},
                 {"OopWithPools", Test::kOopWithPools},
@@ -79,7 +84,12 @@ void runTest(std::string test_name, bench::Config& config) {
         case kUnknown:
             throw std::runtime_error("Unknown test: [" + test_name + "]");
         case kMustache:
+//            indirectAccessMustache(config);
             updatePositionMustache<ARGS...>(config);
+            break;
+        case kFlecs:
+//            indirectAccessFlecs(config);
+            updatePositionFlecs<ARGS...>(config);
             break;
         case kEnTT:
             updatePositionEnTT<ARGS...>(config);
@@ -99,10 +109,49 @@ void runTest(std::string test_name, bench::Config& config) {
     }
 }
 
+void testCreateMustache(uint32_t count) {
+    std::vector<mustache::Entity> out(count);
+    mustache::World world;
+    auto& entities = world.entities();
+    auto& archetype = entities.getArchetype<bench::Position, bench::Rotation, bench::Velocity>();
+    bench::BenchMark bench_mark;
+    mustache::Timer timer;
+    timer.reset();
+    for (auto& entity: out) {
+//        entity = entities.begin().assign<bench::Position>().assign<bench::Rotation>().assign<bench::Velocity>().end();
+//        entity = entities.create<bench::Position, bench::Rotation, bench::Velocity>();
+        entity = entities.create(archetype);
+    }
+    std::cout << timer.elapsed() * 1000 << "ms" << std::endl;
+}
+
+void testCreateEnTT(uint32_t count) {
+    std::vector<entt::entity> out(count);
+    entt::registry registry;
+    mustache::Timer timer;
+    timer.reset();
+    registry.create(out.begin(), out.end());
+    for (auto &entity: out) {
+        registry.emplace<bench::Position>(entity);
+        registry.emplace<bench::Rotation>(entity);
+        registry.emplace<bench::Velocity>(entity);
+    }
+    std::cout << timer.elapsed() * 1000 << "ms" << std::endl;
+}
+
 int main(int argc, const char** argv) {
+//    for (uint32_t i = 0; i < 10; ++i) {
+//        testCreateMustache(2000000);
+//        testCreateEnTT(2000000);
+//        std::cout << "-----------------------------" << std::endl;
+//    }
+//    return 0;
     bench::Config config;
-    config.create_world.report_type = bench::ReportType::kShort;
-    config.update_world.report_type = bench::ReportType::kShort;
+    config.parallel_update = false;
+    config.create_world.iterations = 1;
+    config.update_world.iterations = 100;
+    config.create_world.report_type = bench::ReportType::kDefault;
+    config.update_world.report_type = bench::ReportType::kDefault;
     --argc;
     ++argv;
     bool append = true;
@@ -123,19 +172,29 @@ int main(int argc, const char** argv) {
 
     bench::entities_updated = 0u;
 
-    runTest<bench::UnusedComponent<0, sizeof(glm::mat4)> >(test_name, config);
+//    using Map = std::map<mustache::EntityId, ComponentToGet>;
+//    using Map = std::unordered_map<mustache::EntityId, ComponentToGet, HashId>;
+//    using Map = mustache::ArrayWrapper<ComponentToGet, mustache::EntityId, false>;
+//    entityGetComponentVsContainer<Map >(config);
+//    runTest<bench::UnusedComponent<0, sizeof(glm::mat4)> >(test_name, config);
+    runTest<>(test_name, config);
 
-    const uint64_t expected = config.entity_count * config.update_world.iterations;
-    if (bench::entities_updated != expected) {
-        throw std::runtime_error(test_name + ": invalid updated entities, expected: "
-        + std::to_string(expected) + ", actual: " + std::to_string(bench::entities_updated));
-    }
+//    const uint64_t expected = config.entity_count * config.update_world.iterations;
+//    if (bench::entities_updated != expected) {
+//        throw std::runtime_error(test_name + ": invalid updated entities, expected: "
+//        + std::to_string(expected) + ", actual: " + std::to_string(bench::entities_updated));
+//    }
 
 //    auto& update_file = std::cout;
-    std::fstream create_file{"create." + test_name + ".txt", mode};
-    std::fstream update_file{"update." + test_name + ".txt", mode};
-    create_file << config.entity_count << " " << create.str();
-    update_file << config.entity_count << " " << update.str();
-
+    constexpr bool write_to_file = false;
+    if (write_to_file) {
+        std::fstream create_file{"create." + test_name + ".txt", mode};
+        std::fstream update_file{"update." + test_name + ".txt", mode};
+        create_file << config.entity_count << " " << create.str();
+        update_file << config.entity_count << " " << update.str();
+    } else {
+        std::cout << config.entity_count << " " << create.str() << std::endl;
+        std::cout << config.entity_count << " " << update.str();
+    }
     return 0;
 }

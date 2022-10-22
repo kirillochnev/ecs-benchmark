@@ -4,6 +4,7 @@
 #include "benchmark.hpp"
 #include "components.hpp"
 #include <entt/entt.hpp>
+#include <execution>
 
 template <typename... _Unused>
 void updatePositionEnTT(const bench::Config& config) {
@@ -20,7 +21,7 @@ void updatePositionEnTT(const bench::Config& config) {
             entity entity = registry.create();
             registry.emplace<Position>(entity);
             registry.emplace<Velocity>(entity);
-            registry.emplace<Rotation>(entity);
+//            registry.emplace<Rotation>(entity);
             unused(registry.emplace<_Unused>(entity)...);
 
             if (config.remove_half) {
@@ -55,9 +56,21 @@ void updatePositionEnTT(const bench::Config& config) {
     }
 
 
-    auto group = registry.template group<Position, Velocity, Rotation>();
-    benchmark.run([&group]{
-        group.each(&updatePositionFunction);
+//    auto group = registry.template group<Position, Velocity, Rotation>();
+    auto group = registry.template group<Position, Velocity>();
+    benchmark.run([&group, &config] {
+        if (config.parallel_update) {
+//            std::for_each(std::execution::par_unseq, group.begin(), group.end(), [&group](auto entity) {
+//                updatePositionFunction(
+//                        group.template get<Position>(entity),
+//                    group.template get<Velocity>(entity),
+//                  group.template get<Rotation>(entity));
+////                decltype(auto) components = group.template get<Position>(entity) ;//[entity];
+////                updatePositionFunction(std::get<0>(components), std::get<1>(components), std::get<2>(components));
+//            });
+        } else {
+            group.each(&updatePositionFunctionShort);
+        }
     }, config.update_world.iterations, []{});
     benchmark.show(config.update_world.getOutStream(), config.update_world.report_type);
     benchmark.reset();

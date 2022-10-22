@@ -19,7 +19,7 @@ void updatePositionEntityX(const bench::Config& config) {
             auto entity = entity_manager.create();
             entity.assign<Position>();
             entity.assign<Velocity>();
-            entity.assign<Rotation>();
+//            entity.assign<Rotation>();
             unused (entity_manager.template assign<_Unused>(entity.id())...);
 
             if (config.create_extra) {
@@ -56,10 +56,11 @@ void updatePositionEntityX(const bench::Config& config) {
     benchmark.run([&entity_manager]{
         ComponentHandle<Position> position;
         ComponentHandle<Velocity> velocity;
-        ComponentHandle<Rotation> rotation;
+//        ComponentHandle<Rotation> rotation;
 
-        for (auto entity : entity_manager.entities_with_components(position, velocity, rotation)) {
-            updatePositionFunction(*position, *velocity, *rotation);
+        for (auto entity : entity_manager.entities_with_components(position, velocity/*, rotation*/)) {
+//            updatePositionFunction(*position, *velocity, *rotation);
+            updatePositionFunctionShort(*position, *velocity);
         }
     }, config.update_world.iterations, []{});
     benchmark.show(config.update_world.getOutStream(), config.update_world.report_type);

@@ -18,7 +18,7 @@ void updatePositionOpenEcs(const bench::Config& config) {
             auto entity = entity_manager.create();
             entity.add<bench::Position>();
             entity.add<bench::Velocity>();
-            entity.add<bench::Rotation>();
+//            entity.add<bench::Rotation>();
             if (config.create_extra) {
                 entity = entity_manager.create();
                 entity.add<bench::Velocity>();
@@ -53,8 +53,9 @@ void updatePositionOpenEcs(const bench::Config& config) {
         e.destroy();
     }
     benchmark.run([&entity_manager] {
-        entity_manager.with([] (bench::Position& pos, bench::Velocity& vel, bench::Rotation& rot) {
-            bench::updatePositionFunction(pos, vel, rot);
+        entity_manager.with([] (bench::Position& pos, bench::Velocity& vel/*, bench::Rotation& rot*/) {
+//            bench::updatePositionFunction(pos, vel, rot);
+            bench::updatePositionFunctionShort(pos, vel/*, rot*/);
         });
     }, config.update_world.iterations, []{});
     benchmark.show(config.update_world.getOutStream(), config.update_world.report_type);
