@@ -10,12 +10,18 @@ namespace bench {
         glm::vec3 value {0.0f,0.0f, 0.0f};
     };
 
+    struct Position2D {
+        glm::vec2 value {0.0f,0.0f};
+    };
+    struct Direction {
+        glm::vec2 value {1.0f, 0.0f};
+    };
     struct Velocity {
         float value { 1.0f };
     };
 
     struct Rotation {
-        glm::quat orient;
+        glm::quat orient {1, 0, 0, 0};
     };
 
     template<uint32_t, size_t _Size = 4>
@@ -32,9 +38,12 @@ namespace bench {
     }
 
 
+    inline void updatePositionFunction(Position2D& position, const Direction& direction, float dt) noexcept {
+        position.value += direction.value * dt;
+    }
     inline void updatePositionFunction(Position& position, const Velocity& velocity, const Rotation& orientation) noexcept {
         constexpr float dt = 1.0f / 60.0f;
-        position.value += dt * velocity.value * forward(orientation.orient);
+        position.value += dt * velocity.value;// * forward(orientation.orient);
     }
 
     template<typename... _Unused>

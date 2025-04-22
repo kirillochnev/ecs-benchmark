@@ -7,8 +7,8 @@ project("EcsBenchmark")
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_PARALLEL -fopenmp")
 #set (CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fopenmp")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 
 
 add_subdirectory(third_party/entt)
