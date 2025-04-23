@@ -15,6 +15,7 @@ add_subdirectory(third_party/entt)
 add_subdirectory(third_party/mustache)
 add_subdirectory(third_party/glm)
 add_subdirectory(third_party/entityx)
+add_subdirectory(third_party/flecs)
 
 add_executable(${PROJECT_NAME}
         src/main.cpp
@@ -24,4 +25,5 @@ target_link_libraries(${PROJECT_NAME} EnTT)
 target_link_libraries(${PROJECT_NAME} mustache)
 target_link_libraries(${PROJECT_NAME} glm)
 target_link_libraries(${PROJECT_NAME} entityx)
+target_link_libraries(${PROJECT_NAME} flecs)
 #target_link_libraries(${PROJECT_NAME} tbb)

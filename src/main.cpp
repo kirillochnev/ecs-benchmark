@@ -11,6 +11,7 @@
 #include <random>
 #include <glm/matrix.hpp>
 #include <glm/ext.hpp>
+#include <flecs.h>
 
 namespace {
         bool apply_shuffle = true;
@@ -87,6 +88,14 @@ namespace {
             auto entity = ecs.create();
             (ecs.emplace<_Components>(entity), ...);
             return entity;
+        }
+
+        template<typename... _Components>
+        auto createEntity(flecs::world& world) {
+            return world.entity()
+                    .set(Position{})
+                    .set(Velocity{})
+                    .set(ComponentToCheck{}).id();
         }
 
 
@@ -238,69 +247,67 @@ void enttBench(uint64_t count) {
     std::cout << "Destroy time: " << destroy_dt << "ns" << std::endl;
 }
 
+void flecsBench(uint64_t count) {
+    flecs::world world;
+    world.component<Position>();
+    world.component<Velocity>();
+    const auto check_id = world.component<ComponentToCheck>();
 
-template<typename T>
-struct ComponentAssignedEvent {
-        mustache::Entity entity;
-        T* component;
-};
+    using clock = std::chrono::high_resolution_clock;
+    auto begin_create = clock ::now();
+    auto arr = createEntities<Position, Velocity, ComponentToCheck>(world, count);
+    const auto end_create = clock ::now();
+    const auto dt_create = std::chrono::duration_cast<std::chrono::nanoseconds>(end_create - begin_create).count();
+    std::cout << "flecs create time per entity: " << static_cast<double >(dt_create) / count << "ns\n";
 
-template<typename T>
-struct ComponentRemovedEvent {
-        mustache::Entity entity;
-        T* component;
-};
-
-void eventTest() {
-    struct ComponentWithEvents {
-        using This = ComponentWithEvents;
-        static void afterAssign(mustache::Entity entity, This& component, mustache::World& world) {
-            world.events().post(ComponentAssignedEvent<This>{entity, &component});
-        }
-        static void beforeRemove(mustache::Entity entity, This& component, mustache::World& world) {
-            world.events().post(ComponentRemovedEvent<This>{entity, &component});
-        }
-    };
-
-    mustache::World world;
-    auto assign_subscriber = world.events().subscribe<ComponentAssignedEvent<ComponentWithEvents>>([](const auto& event) {
-        std::cout << "Component assigned to entity: " << event.entity.id().toInt() << std::endl;
+    const auto ns = benchmark([&] {
+        world.each([](flecs::entity, const Velocity& vel, Position& pos) {
+            pos.value += vel.value;
+        });
     });
-    auto remove_subscriber = world.events().subscribe<ComponentRemovedEvent<ComponentWithEvents>>([](const auto& event) {
-        std::cout << "Component removed to entity: " << event.entity.id().toInt() << std::endl;
-    });
+    std::cout << "flecs update time per entity: " << ns / count << "ns\n";
 
-    for (uint32_t i = 0; i < 128; ++i) {
-        (void)world.entities().create<ComponentWithEvents>();
-    }
-    world.entities().clear();
+    const auto get_dt = benchmark([&arr, check_id, world]( ) {
+        for (auto& e : arr) {
+            auto* c = static_cast<const ComponentToCheck*>(ecs_get_id(world, e, check_id));
+            if (!c || c->value != ComponentToCheck::Magic) {
+                std::exit(1);
+            }
+        }
+    });
+    std::cout << "flecs get ComponentToCheck: " << get_dt / count << "ns\n";
+
+    const auto destroy_dt = getNanoseconds([&arr, &world] {
+        for (auto& e : arr) {
+            ecs_delete(world, e);
+//            e.destruct();
+        }
+    }, count);
+    std::cout << "flecs destroy time: " << destroy_dt << "ns\n";
 }
-
-//const bool mustache::OptionalVersionStorage::is_version_control_enabled{true};
-
-
 
 int main(int argc, const char** argv) {
     if (argc < 2) {
-        std::cerr << "Use EcsBenchmark mustache|EnTT [enitity count]" << std::endl;
+        std::cerr << "Use: EcsBenchmark mustache|EnTT|flecs [entity count] [shuffle=true/false]\n";
         return 1;
     }
     const std::string ecs = argv[1];
-//    eventTest();
-//    if (true) return 0;
     uint64_t count = 1 << 20;
     if (argc > 2) {
         count = std::atoi(argv[2]);
     }
     if (argc > 3) {
-        apply_shuffle = argv[3] == std::string ("true");
+        apply_shuffle = (std::string(argv[3]) == "true");
     }
+
     if (ecs == "EnTT") {
         enttBench(count);
-    }
-    if (ecs == "mustache") {
-        MUSTACHE_PROFILER_START();
+    } else if (ecs == "mustache") {
         mustacheBench(count);
-        MUSTACHE_PROFILER_DUMP("result.prof");
+    } else if (ecs == "flecs") {
+        flecsBench(count);
+    } else {
+        std::cerr << "Unknown ECS type\n";
+        return 1;
     }
 }
